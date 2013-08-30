@@ -1,18 +1,23 @@
-# PyMethyl
+PyMethyl
+==========
 
 This will parse [MethylCoder](https://github.com/brentp/methylcode) output and make a binary index for quick random access to methylation ratios based on position.
 
-## Installation
+Installation
+------------
 
-```bash
+```python
 python setup.py install
+```
 
-#or
+or
 
+```Shell
 python setup.py install --user
 ```
 
-## Documentation
+Documentation
+-------------
 
 ### Class - MethIndex
 ```

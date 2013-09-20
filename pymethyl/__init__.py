@@ -61,7 +61,7 @@ class MethIndex:
 			if end == -1:
 				countEnd = self.chromDict[chrom]-start+1
 			else:
-				countEnd = end-start+1
+				countEnd = min(end-start+1,self.chromDict[chrom]-start+1)
 		IB = open(self.methBin, 'rb')
 		IB.seek(seekStart)
 		out = []

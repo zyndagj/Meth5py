@@ -68,7 +68,7 @@ class MethIndex:
 		for i in xrange(countEnd):
 			vals = IB.read(4)
 			tmp = struct.unpack('HH', vals)
-			if tmp == (65535, 65535):
+			if tmp == (65535, 65535) or tmp[1] < 7 or tmp[1] > 200:
 				out.append(-1)
 			else:
 				out.append(float(tmp[0]) / float(tmp[1]))

@@ -31,18 +31,23 @@ class MethIndex:
 		else:
 			self.readBinIndex()
 
-	def fetch(self, chrom, start = -1, end = -1):
+	def fetch(self, chrom, start = -1, end = -1, minCov = 5, maxCov = 200):
 		"""
 		Fetches a region of methylation ratios.
 		
 		If no start is given, 1-end is returned.
-		If no end is given, start- is returned
+		If no end is given, start- is returned.
+
+		If depth < minCov or depth > maxCov, then -1 returned
+		at that position.
 		
 		Agurments
 		=================================
 		chrom   - Chromosome
 		start   - Start of region (1-indexed)
-		end	 - End of region (1-indexed)
+		end	- End of region (1-indexed)
+		minCov	- Minimum coverage needed (Default: 5)
+		maxCov	- Maximum coverage allowed (Default: 200)
 		"""
 		if chrom not in self.seekDict:
 			print 'Not a real chromosome'
@@ -68,7 +73,7 @@ class MethIndex:
 		for i in xrange(countEnd):
 			vals = IB.read(4)
 			tmp = struct.unpack('HH', vals)
-			if tmp == (65535, 65535) or tmp[1] < 7 or tmp[1] > 200:
+			if tmp == (65535, 65535) or tmp[1] < minCov or tmp[1] > maxCov:
 				out.append(-1)
 			else:
 				out.append(float(tmp[0]) / float(tmp[1]))

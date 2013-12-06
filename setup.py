@@ -4,7 +4,9 @@
 Setup script for pymethyl
 """
 
-from distutils.core import setup
+from distutils.core import setup, Extension
+
+module1 = Extension('cFetch', sources=["pymethyl/cFetch.c"])
 
 setup(name = "pymethyl",
 	version = "0.1",
@@ -12,4 +14,5 @@ setup(name = "pymethyl",
 	author_email="gjzynda@indiana.edu",
 	license="GNU",
 	description = "Indexing of MethylCoder output",
-	packages = ["pymethyl"])
+	packages = ["pymethyl"],
+	ext_modules=[module1])

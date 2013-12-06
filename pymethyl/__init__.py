@@ -3,6 +3,7 @@
 import sys
 import os.path
 import struct
+from cFetch import cFetch
 
 class MethIndex:
 	"""
@@ -67,17 +68,7 @@ class MethIndex:
 				countEnd = self.chromDict[chrom]-start+1
 			else:
 				countEnd = min(end-start+1,self.chromDict[chrom]-start+1)
-		IB = open(self.methBin, 'rb')
-		IB.seek(seekStart)
-		out = []
-		for i in xrange(countEnd):
-			vals = IB.read(4)
-			tmp = struct.unpack('HH', vals)
-			if tmp == (65535, 65535) or tmp[1] < minCov or tmp[1] > maxCov:
-				out.append(-1)
-			else:
-				out.append(float(tmp[0]) / float(tmp[1]))
-
+		out = cFetch(self.methBin, seekStart, countEnd, minCov, maxCov)
 		return out
 
 	def readFAI(self):

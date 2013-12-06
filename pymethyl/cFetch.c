@@ -54,6 +54,7 @@ static PyObject* cFetch(PyObject* self, PyObject* args) {
 	for(i=0; i<blocks; i++) {
 		PyList_SetItem(outList, (Py_ssize_t) i, Py_BuildValue("d",outArray[i]));
 	}
+	free(outArray);
 	return outList;
 }
 

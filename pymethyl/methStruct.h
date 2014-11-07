@@ -1,4 +1,5 @@
 typedef struct{
-	unsigned short x;
-	unsigned short y;
+	unsigned short c;
+	unsigned short ct;
+	unsigned short con;
 } methStruct;

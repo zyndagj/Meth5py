@@ -5,8 +5,8 @@
 
 //http://www.codingunit.com/c-tutorial-binary-file-io
 
-double* fetch(char* fileName, int seekStart, int blocks, 
-	int minCov, int maxCov) {
+void fetch(char* fileName, int seekStart, int blocks, 
+	int minCov, int maxCov, PyObject* outMeth, PyObject* outContext) {
 	FILE* f=fopen(fileName,"rb");
 	int fseekError = fseek(f, (long int) seekStart, SEEK_SET);
 	// Check for errors in fseek
@@ -20,24 +20,29 @@ double* fetch(char* fileName, int seekStart, int blocks,
 		printf("Read failed.\n");
 	}
 	fclose(f);
-	double* outArray = malloc(sizeof(double)*blocks);
 	int i;
+	double tmp;
 	for(i=0; i<blocks; i++) {
-		if(structArray[i].x == (unsigned short) 65535 && structArray[i].y == (unsigned short) 65535) {
-			outArray[i] = -1;
-		} else if(structArray[i].y < minCov) {
-			outArray[i] = -1;
-		} else if(structArray[i].y > maxCov) {
-			outArray[i] = -1;
+		// Check for no coverage
+		if(structArray[i].c == (unsigned short) 65535 && structArray[i].ct == (unsigned short) 65535) {
+			PyList_SetItem(outMeth, (Py_ssize_t) i, Py_BuildValue("d", -1.0));
+		// Check for not enough coverage
+		} else if(structArray[i].ct < minCov) {
+			PyList_SetItem(outMeth, (Py_ssize_t) i, Py_BuildValue("d", -1.0));
+		// Check for too much coverage (from repeats)
+		} else if(structArray[i].ct > maxCov) {
+			PyList_SetItem(outMeth, (Py_ssize_t) i, Py_BuildValue("d", -1.0));
 		} else {
-			outArray[i] = (double) structArray[i].x / (double) structArray[i].y;
+			tmp = (double) structArray[i].c / (double) structArray[i].ct;
+			PyList_SetItem(outMeth, (Py_ssize_t) i, Py_BuildValue("d", tmp));
 		}
+		PyList_SetItem(outContext, (Py_ssize_t) i, Py_BuildValue("i",(int) structArray[i].con));
 	}
 	free(structArray);
-	return outArray;
 }
 
 static PyObject* cFetch(PyObject* self, PyObject* args) {
+	// Pass back a tuple of arrays
 	char* fileName = NULL;
 	int seekStart = 0;
 	int blocks = 0;
@@ -47,15 +52,10 @@ static PyObject* cFetch(PyObject* self, PyObject* args) {
 		&minCov, &maxCov)) {
 		return NULL;
 	}
-	
-	double* outArray = fetch(fileName, seekStart, blocks, minCov, maxCov);
-	PyObject* outList = PyList_New((Py_ssize_t) blocks);
-	int i;
-	for(i=0; i<blocks; i++) {
-		PyList_SetItem(outList, (Py_ssize_t) i, Py_BuildValue("d",outArray[i]));
-	}
-	free(outArray);
-	return outList;
+	PyObject* outMeth = PyList_New((Py_ssize_t) blocks);
+	PyObject* outContext = PyList_New((Py_ssize_t) blocks);
+	fetch(fileName, seekStart, blocks, minCov, maxCov, outMeth, outContext);
+	return Py_BuildValue("(OO)", outMeth, outContext);
 }
 
 static PyMethodDef FetchMethods[] = {

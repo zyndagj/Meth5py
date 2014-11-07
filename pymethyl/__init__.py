@@ -17,7 +17,7 @@ class MethIndex:
 		Arguments
 		=================================
 		methFile		- Methylation input file from MethylCoder
-		faFile		  - Fasta file of reference (index required)
+		faFile			- Fasta file of reference (index required)
 		"""
 		self.methFile = methFile
 		self.methBin = methFile + '.bin'
@@ -50,6 +50,8 @@ class MethIndex:
 		minCov	- Minimum coverage needed (Default: 5)
 		maxCov	- Maximum coverage allowed (Default: 200)
 		"""
+		#think about
+		# http://stackoverflow.com/questions/8461798/how-can-i-struct-unpack-many-numbers-at-once
 		if chrom not in self.seekDict:
 			print 'Not a real chromosome'
 			return []
@@ -63,13 +65,13 @@ class MethIndex:
 			else:
 				countEnd = end
 		else:
-			seekStart = self.seekDict[chrom] + (start - 1) * 4
+			seekStart = self.seekDict[chrom] + (start - 1) * 6
 			if end == -1:
 				countEnd = self.chromDict[chrom]-start+1
 			else:
 				countEnd = min(end-start+1,self.chromDict[chrom]-start+1)
-		out = cFetch(self.methBin, seekStart, countEnd, minCov, maxCov)
-		return out
+		# returns (outMeth, outContext)
+		return cFetch(self.methBin, seekStart, countEnd, minCov, maxCov)
 
 	def readFAI(self):
 		"""
@@ -101,19 +103,21 @@ class MethIndex:
 		curPos = 1
 		line = IM.readline()
 		order = []
+		### Grab initial chromsome name
 		if line[:3] != 'chr':
-			IM.seek(0)
-			curChrom = IM.readline().split()[0]
+			curChrom = line.split()[0]
 			IM.seek(0)
 		else:
 			curChrom = IM.readline().split()[0]
 			IM.seek(0)
 			IM.readline()
 		order.append(curChrom)
+		### Parse data
 		for line in IM:
 			tmp = line.split('\t')
 			chrom = tmp[0]
 			pos = int(tmp[1])
+			contextNum = self.parseContext(tmp[3])
 			C = int(tmp[6])
 			CorT = int(tmp[7])
 			if pos < curPos:
@@ -124,15 +128,45 @@ class MethIndex:
 			while curPos < pos:
 				self.writeBlank(OI)
 				curPos += 1
-
-			self.writeData(OI, C, CorT)
+			self.writeData(OI, C, CorT, contextNum)
 			curPos += 1
-
 		self.fillChrom(curChrom, curPos, OI)
 		IM.close()
 		OI.close()
 		self.makeBinIndex(order)
 
+	def getInitChrom(IM, line):
+		if line[:3] != 'chr':
+			curChrom = line.split()[0]
+			IM.seek(0)
+		else:
+			curChrom = IM.readline().split()[0]
+			IM.seek(0)
+			IM.readline()
+		return curChrom
+		
+	def parseContext(self, context):
+		"""
+		Parses the methylation motif
+
+		 1	2	3		 4	5	6
+		+CG	CHG	CHH		-CG	CHG	CHH
+		"""
+		if context[2] == "C":
+			if context[3] == "G":
+				return 1
+			elif context[4] == "G":
+				return 2
+			else:
+				return 3
+		else:
+			if context[1] == "C":
+				return 4
+			elif context[0] == "C":
+				return 5
+			else:
+				return 6
+	
 	def fillChrom(self, curChrom, curPos, F):
 		"""
 		Writes data for rest of chromosome
@@ -143,16 +177,16 @@ class MethIndex:
 
 	def writeBlank(self, F):
 		"""
-		Writes two blank values (65535) to .bin file.
+		Writes two blank values (65535) and one 0 to .bin file.
 		65535 is the largest USHORT.
 		"""
-		F.write('\xff\xff\xff\xff')
+		F.write('\xff\xff\xff\xff\x00\x00')
 
-	def writeData(self, F, C, CorT):
+	def writeData(self, F, C, CorT, contextNum):
 		"""
-		Writes two unsigned shorts to .bin file.
+		Writes three unsigned shorts to .bin file.
 		"""
-		F.write(struct.pack('HH', C, CorT))
+		F.write(struct.pack('HHH', C, CorT, contextNum))
 
 	def makeBinIndex(self, chromOrder):
 		"""
@@ -166,8 +200,7 @@ class MethIndex:
 			OBI.write(chrom + '\t')
 			OBI.write(str(location) + '\n')
 			self.seekDict[chrom] = location
-			location = location + size * 4
-
+			location = location + size * 6
 		OBI.close()
 
 	def readBinIndex(self):

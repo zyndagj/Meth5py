@@ -117,7 +117,8 @@ class MethIndex:
 			tmp = line.split('\t')
 			chrom = tmp[0]
 			pos = int(tmp[1])
-			contextNum = self.parseContext(tmp[3])
+			#contextNum = self.parseContext(tmp[3])
+			contextNum = self.parseContext2(tmp[3],tmp[2])
 			C = int(tmp[6])
 			CorT = int(tmp[7])
 			if pos < curPos:
@@ -144,6 +145,20 @@ class MethIndex:
 			IM.seek(0)
 			IM.readline()
 		return curChrom
+
+	def parseContext2(self, context, strand):
+		if strand == "+":
+			sOff = 0
+		elif strand == "-":
+			sOff = 3
+		else: sys.exit("Bad strand")
+		if context == "CG":
+			return 1+sOff
+		elif context == "CHG":
+			return 2+sOff
+		elif context == "CHH":
+			return 3+sOff
+		else: sys.exit("Bad context")
 		
 	def parseContext(self, context):
 		"""

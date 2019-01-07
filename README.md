@@ -4,7 +4,7 @@ Meth5py
 This will parse output from
 
 * [BSMAP's](https://sites.google.com/a/brown.edu/bioinformatics-in-biomed/bsmap-for-methylation) methratio.py
-* [BSMAPz'z](https://github.com/zyndagj/BSMAPz) methratio.py
+* [BSMAPz's](https://github.com/zyndagj/BSMAPz) methratio.py
 
 and make a sparse, compressed hdf5 representation for fast queries based on position. Indexing is 1-based and follows the same conventions as samtools's faidx.
 

@@ -1,18 +1,21 @@
 #!/usr/bin/python
 
 """
-Setup script for pymethyl
+Setup script for Meth5py
 """
 
-from distutils.core import setup, Extension
+try:
+	from setuptools import setup, Extension
+except:
+	from distutils.core import setup, Extension
 
-module1 = Extension('cFetch', sources=["pymethyl/cFetch.c"])
-
-setup(name = "pymethyl",
-	version = "0.2",
+setup(name = "Meth5py",
+	version = "0.3",
 	author = "Greg Zynda",
-	author_email="gjzynda@indiana.edu",
-	license="GNU",
-	description = "Indexing of MethylCoder output",
-	packages = ["pymethyl"],
-	ext_modules=[module1])
+	author_email="zyndagj@gmail.com",
+	license="BSD-3",
+	description = "A class for converting BSMAPz methratio output into a fast and compressed hd5f format",
+	packages = ["Meth5py"],
+	requires = ["h5py"],
+	tests_require = ['pydoc-markdown'],
+	test_suite="tests")

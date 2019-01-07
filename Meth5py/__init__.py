@@ -166,7 +166,7 @@ class Meth5py:
 			del self.H5
 	def _makeIndex(self):
 		'''
-		Reads the methratio file and creates an hd5f file of the following structure
+		Reads the methratio file and creates an hdf5 file of the following structure
 
 		file[chrom_dataset][position] = [context_index, strand_index, c, ct, g, ga]
 

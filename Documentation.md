@@ -1,6 +1,6 @@
 # Meth5py
 ```python
-Meth5py(self, methFile='', faFile='', h5File='', force=False, verbose=False)
+Meth5py(self, methFile='', faFile='', h5File='', n_cores=0, force=False, verbose=False)
 ```
 
 Class for converting BSMAPz methratio files to hdf5 for fast random access
@@ -10,6 +10,7 @@ __Parameters__
 - __methFile (str)__: Methylation input file
 - __faFile (str)__: Reference file
 - __h5File (str)__: previously created h5 file
+- __n_cores (int)__: The number of cores to use for indexing [0 all]
 - __force (bool)__: Force the re-creation of h5 file
 - __verbose (bool)__: Enable verbose logging
 
@@ -20,6 +21,7 @@ __Attributes__
 - `strands (tuple)`: Tuple of strands
 - `sorted_chroms (list)`: Sorted chromosomes in reference
 - `chom_dict (dict)`: Dictionary of chromosomes and their lengths
+- `n_cores (int)`: The number of cores to use for indexing
 
 __Example__
 

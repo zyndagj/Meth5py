@@ -12,7 +12,8 @@ except:
 logStream = StringIO()
 # Need to start logger BEFORE importing any pyPlateCalibrate code
 import logging
-FORMAT = "[%(levelname)s - %(filename)s:%(lineno)s - %(funcName)15s] %(message)s"
+#FORMAT = "[%(levelname)s - %(filename)s:%(lineno)s - %(funcName)15s] %(message)s"
+FORMAT = '[%(levelname)s - P-%(process)d - %(filename)s:%(lineno)s - %(msecs)d] %(message)s'
 logging.basicConfig(stream=logStream, level=logging.DEBUG, format=FORMAT)
 # Now import module
 from Meth5py import Meth5py
@@ -29,14 +30,51 @@ class TestMeth5py(unittest.TestCase):
 		# Remove h5 file
 		if os.path.exists(self.h5): os.remove(self.h5)
 		## Runs after every test function ##
-	def testIndexCreation(self):
-		m5 = Meth5py(self.mr, self.fa, verbose=True)
-	def testFaiReader(self):
-		m5 = Meth5py(self.mr, self.fa, verbose=True)
+	def test_p4_IndexCreation(self):
+		m5 = Meth5py(self.mr, self.fa, n_cores=4, verbose=True)
+		m5.close()
+		#output = logStream.getvalue()
+		#print(output)
+	def test_p4_FaiReader(self):
+		m5 = Meth5py(self.mr, self.fa, n_cores=4, verbose=True)
 		self.assertEqual(m5.sorted_chroms, ['Chr1','Chr2'])
 		self.assertEqual(m5.chrom_dict, {'Chr1':20, 'Chr2':20})
-	def testFetch(self):
-		m5 = Meth5py(self.mr, self.fa, verbose=True)
+		m5.close()
+	def test_p4_Fetch(self):
+		m5 = Meth5py(self.mr, self.fa, n_cores=4, verbose=True)
 		self.assertTrue(all(m5.fetch('Chr1', 10, 10)[0] == [2,0,10,20,1,1]))
 		self.assertTrue(all(m5.fetch('Chr1', end=1)[0] == [-1]*6))
 		self.assertTrue(all(map(all, m5.fetch('Chr1', 10, 11) == [[2,0,10,20,1,1],[2,0,12,20,1,1]])))
+		# All regions with no reads
+		self.assertTrue(all(map(all, m5.fetch('Chr1', 1, 9) == [[-1]*6]*9)))
+		self.assertTrue(all(map(all, m5.fetch('Chr1', 19,20) == [[-1]*6]*2)))
+		self.assertTrue(all(map(all, m5.fetch('Chr2', 1,5) == [[-1]*6]*5)))
+		self.assertTrue(all(map(all, m5.fetch('Chr2', 9,9) == [[-1]*6]*1)))
+		self.assertTrue(all(map(all, m5.fetch('Chr2', 11,11) == [[-1]*6]*1)))
+		self.assertTrue(all(map(all, m5.fetch('Chr2', 13,14) == [[-1]*6]*2)))
+		self.assertTrue(all(map(all, m5.fetch('Chr2', 16,16) == [[-1]*6]*1)))
+		self.assertTrue(all(map(all, m5.fetch('Chr2', 19,20) == [[-1]*6]*2)))
+		m5.close()
+	def test_p1_IndexCreation(self):
+		m5 = Meth5py(self.mr, self.fa, n_cores=1, verbose=True)
+		m5.close()
+	def test_p1_FaiReader(self):
+		m5 = Meth5py(self.mr, self.fa, n_cores=1, verbose=True)
+		self.assertEqual(m5.sorted_chroms, ['Chr1','Chr2'])
+		self.assertEqual(m5.chrom_dict, {'Chr1':20, 'Chr2':20})
+		m5.close()
+	def test_p1_Fetch(self):
+		m5 = Meth5py(self.mr, self.fa, n_cores=1, verbose=True)
+		self.assertTrue(all(m5.fetch('Chr1', 10, 10)[0] == [2,0,10,20,1,1]))
+		self.assertTrue(all(m5.fetch('Chr1', end=1)[0] == [-1]*6))
+		self.assertTrue(all(map(all, m5.fetch('Chr1', 10, 11) == [[2,0,10,20,1,1],[2,0,12,20,1,1]])))
+		# All regions with no reads
+		self.assertTrue(all(map(all, m5.fetch('Chr1', 1, 9) == [[-1]*6]*9)))
+		self.assertTrue(all(map(all, m5.fetch('Chr1', 19,20) == [[-1]*6]*2)))
+		self.assertTrue(all(map(all, m5.fetch('Chr2', 1,5) == [[-1]*6]*5)))
+		self.assertTrue(all(map(all, m5.fetch('Chr2', 9,9) == [[-1]*6]*1)))
+		self.assertTrue(all(map(all, m5.fetch('Chr2', 11,11) == [[-1]*6]*1)))
+		self.assertTrue(all(map(all, m5.fetch('Chr2', 13,14) == [[-1]*6]*2)))
+		self.assertTrue(all(map(all, m5.fetch('Chr2', 16,16) == [[-1]*6]*1)))
+		self.assertTrue(all(map(all, m5.fetch('Chr2', 19,20) == [[-1]*6]*2)))
+		m5.close()

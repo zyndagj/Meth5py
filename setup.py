@@ -10,7 +10,7 @@ except:
 	from distutils.core import setup, Extension
 
 setup(name = "Meth5py",
-	version = "0.4.0",
+	version = "0.4.2",
 	author = "Greg Zynda",
 	author_email="zyndagj@gmail.com",
 	license="BSD",

@@ -195,16 +195,18 @@ class Meth5py:
 			for chrom in self.sorted_chroms:
 				chrom_len = self.chrom_dict[chrom]
 				# [context, strand, c, ct, g, ga]
-				H5.create_dataset(chrom, (chrom_len, 6), compression='gzip', compression_opts=6, chunks=True, fillvalue=-1, dtype='i')
+				H5.create_dataset(chrom, (chrom_len, 6), compression='lzf', chunks=True, fillvalue=-1, dtype='i')
 			H5.close()
 			NP = min(self.n_cores, mp.cpu_count()) if self.n_cores else mp.cpu_count()
 			logger.debug("Creating index using %i cores"%(NP))
 			# Create global variables
 			global syncArray, chromArray, currentChrom
 			syncArray = mp.RawArray('B', [0]*NP)
-			chromArray = mp.RawArray('i', [-1]*(max(self.chrom_dict.values())*6))
-			currentChrom = mp.RawArray('c', "This is the maximum string length")
-			currentChrom.value = get_first_chrom(self.methFile)
+			chromArray = mp.RawArray('i', max(self.chrom_dict.values())*6)
+			np_chromArray = np.frombuffer(chromArray, dtype='i')
+			np_chromArray[:] = -1
+			currentChrom = mp.RawArray('c', 30)
+			currentChrom.value = get_first_chrom(self.methFile).encode('ascii')
 			# Launch workers
 			pool = mp.Pool(NP)
 			pool.map(index_worker, [(self.methFile, self.methBin, self.chrom_dict, i, NP) for i in range(NP)])
@@ -281,6 +283,7 @@ def index_worker(args):
 	meth_file, h5_file, chrom_dict, pid, NP = args
 	if pid == 0:
 		H5 = h5py.File(h5_file,'a')
+		np_chromArray = np.frombuffer(chromArray, dtype='i')
 	IM = open(meth_file,'r')
 	short_sleep = 0.5
 	long_sleep = 1
@@ -291,25 +294,28 @@ def index_worker(args):
 		cIndex = contexts.index(tmp[3])
 		c, ct, g, ga = map(int, tmp[6:10])
 		# Handle write outs
-		if currentChrom.value != chrom:
+		if currentChrom.value.decode('ascii') != chrom:
 			syncArray[pid] = 0
 			if pid != 0:
 				#logger.debug("Waiting for chromosome %s to be written"%(currentChrom.value))
 				while syncArray[pid] == 0:
 					time.sleep(short_sleep)
-					if syncArray[pid] == 1 and currentChrom.value != chrom:
+					if syncArray[pid] == 1 and currentChrom.value.decode('ascii') != chrom:
 						#logger.debug("Waiting for next chromosome")
 						syncArray[pid] = 0
 			else: # pid == 0
 				while sum(syncArray) > 0:
 					#logger.debug("MASTER waiting for others to finish writing "+str(list(syncArray)))
 					time.sleep(short_sleep)
-				clen = chrom_dict[currentChrom.value]
-				assert(H5[currentChrom.value].shape == (clen,6))
-				H5[currentChrom.value][:,:] = np.reshape(chromArray[:clen*6], (clen,6))
-				chromArray[:] = mp.RawArray('i', [-1]*len(chromArray))
+				clen = chrom_dict[currentChrom.value.decode('ascii')]
+				assert(H5[currentChrom.value.decode('ascii')].shape == (clen,6))
+				#H5[currentChrom.value][:,:] = np.reshape(chromArray[:clen*6], (clen,6))
+				H5[currentChrom.value.decode('ascii')][:,:] = np.reshape(np_chromArray[:clen*6], (clen,6))
+				np_chromArray[:] = -1
+				assert(np.sum(chromArray) == -len(chromArray))
+				#chromArray[:] = [-1]*len(chromArray)
 				#logger.debug("Wrote %s. Updating global chrom to %s and removing barrier"%(currentChrom.value, chrom))
-				currentChrom.value = chrom
+				currentChrom.value = chrom.encode('ascii')
 				syncArray[:] = [1]*len(syncArray)
 		chromArray[pos*6:(pos+1)*6] = (cIndex, strandIndex, c, ct, g, ga)
 		#print("PID-%i %.2f wrote %s:%i-%i cn=%s"%(pid,time.time.time(), chrom, pos+1, pos+6, currentChrom.value))
@@ -318,9 +324,9 @@ def index_worker(args):
 		while sum(syncArray) > 0:
 			#logger.debug("MASTER waiting for others to finish writing "+str(list(syncArray)))
 			time.sleep(short_sleep)
-		clen = chrom_dict[currentChrom.value]
-		assert(H5[currentChrom.value].shape == (clen,6))
+		clen = chrom_dict[currentChrom.value.decode('ascii')]
+		assert(H5[currentChrom.value.decode('ascii')].shape == (clen,6))
 		#logger.debug("Wrote %s. The last chromosome"%(currentChrom.value))
-		H5[currentChrom.value][:,:] = np.reshape(chromArray[:clen*6], (clen,6))
+		H5[currentChrom.value.decode('ascii')][:,:] = np.reshape(chromArray[:clen*6], (clen,6))
 		H5.close()
 	IM.close()
